@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Super Scratch</title>
+
+  <style>
+    body {
+      background: #222;
+      margin: 0;
+      overflow: hidden;
+      text-align: center;
+    }
+
+    canvas {
+      border: 4px solid #000;
+      background: #88c;
+      display: block;
+      margin: 20px auto;
+    }
+
+    /* Game Over Overlay */
+    #overlay {
+      display: none;
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.75);
+      color: white;
+      font-family: monospace;
+      text-align: center;
+    }
+
+    #overlay h1 {
+      margin-top: 160px;
+      font-size: 48px;
+    }
+
+    #overlay p {
+      font-size: 18px;
+    }
+
+    /* Restart Button */
+    #restartBtn {
+      margin-top: 30px;
+      padding: 14px 28px;
+      font-family: monospace;
+      font-size: 20px;
+      background: #ff6b6b;
+      color: white;
+      border: 4px solid #000;
+      cursor: pointer;
+      box-shadow: 4px 4px 0 #000;
+    }
+
+    #restartBtn:hover {
+      background: #ff8787;
+    }
+  </style>
+</head>
+
+<body>
+
+<canvas id="game" width="800" height="480"></canvas>
+
+<div id="overlay">
+  <h1 id="endText">GAME OVER 🐾</h1>
+  <button id="restartBtn">RESTART</button>
+  <p>Press <b>R</b> to restart</p>
+</div>
+
+<script>
+/* =====================
+   SETUP
+===================== */
+var canvas = document.getElementById("game");
+var ctx = canvas.getContext("2d");
+
+var overlay = document.getElementById("overlay");
+var endText = document.getElementById("endText");
+var restartBtn = document.getElementById("restartBtn");
+
+/* =====================
+   GAME OBJECT
+===================== */
+var game = {
+  timer: null,
+  finished: false,
+
+  controls: {
+    left: false,
+    right: false,
+    up: false,
+    down: false,
+
+    mapping: {
+      65: "left",
+      68: "right",
+      87: "up",
+      83: "down"
+    },
+
+    buttonPress: function(e) {
+      if (this.mapping[e.keyCode]) {
+        this[this.mapping[e.keyCode]] = true;
+      }
+      if (e.keyCode === 82 && game.finished) {
+        resetGame();
+      }
+    },
+
+    buttonRelease: function(e) {
+      if (this.mapping[e.keyCode]) {
+        this[this.mapping[e.keyCode]] = false;
+      }
+    },
+
+    connect: function() {
+      window.addEventListener("keydown", this.buttonPress.bind(this));
+      window.addEventListener("keyup", this.buttonRelease.bind(this));
+    }
+  },
+
+  loop: function() {
+    if (this.finished) return;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    world.tick();
+    player.tick();
+
+    world.draw();
+    player.draw();
+
+    this.timer = setTimeout(() => game.loop(), 1000 / 60);
+  },
+
+  start: function() {
+    this.finished = false;
+    overlay.style.display = "none";
+    this.controls.connect();
+    this.loop();
+  },
+
+  stop: function(reason) {
+    this.finished = true;
+    clearTimeout(this.timer);
+
+    endText.textContent = reason === "win"
+      ? "YOU WIN 🐾"
+      : "GAME OVER 🐾";
+
+    overlay.style.display = "block";
+  }
+};
+
+/* =====================
+   WORLD (minimal stub)
+===================== */
+var world = {
+  tick: function() {
+    // placeholder physics
+  },
+  draw: function() {
+    ctx.fillStyle = "#445";
+    ctx.fillRect(0, 400, 800, 80);
+  }
+};
+
+/* =====================
+   PLAYER
+===================== */
+var player = {
+  x: 60,
+  y: 300,
+  vx: 0,
+  vy: 0,
+
+  reset: function() {
+    this.x = 60;
+    this.y = 300;
+    this.vx = 0;
+    this.vy = 0;
+  },
+
+  tick: function() {
+    if (game.controls.left) this.x -= 4;
+    if (game.controls.right) this.x += 4;
+    if (game.controls.up) this.y -= 4;
+    if (game.controls.down) this.y += 4;
+  },
+
+  draw: function() {
+    ctx.fillStyle = "#ffdd55";
+    ctx.fillRect(this.x, this.y, 32, 32);
+  }
+};
+
+/* =====================
+   RESTART LOGIC
+===================== */
+restartBtn.onclick = resetGame;
+
+function resetGame() {
+  clearTimeout(game.timer);
+  player.reset();
+  game.start();
+}
+
+/* =====================
+   START GAME
+===================== */
+game.start();
+
+/* Demo end trigger (remove later) */
+setTimeout(() => game.stop("lose"), 5000);
+</script>
+
+</body>
+</html>
