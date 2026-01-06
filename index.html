@@ -9,7 +9,15 @@
   <!-- the canvas is where my game will run, kind of like a div -->
   <canvas id="game" width="800" height="480"></canvas>
 
+  <dialog open>
+    <p>Use WASD to move and jump! Try to reach the end of the level!</p>
+    <button id="restartBtn">Restart</button>
+    <button>Pause</button>
+    <button>Start</button>
+  </dialog>
+
   <script type="text/javascript">
+    
     // this is the setup for the beginning of the game
     // it creates the context and sets up controls.
     var canvas = document.getElementById("game");
@@ -103,13 +111,19 @@
       }
     };
 
+    // restart button reloads the page
+    document.getElementById("restartBtn").addEventListener("click", function () {
+      location.reload();
+    });
+
+
     // the world contains the level layout, physics, and collision map
     var world = {
       height: 480,
       width: 640,
       gravity: 10,
       distanceTravelled: 0,
-      level: null,
+      level: null, 
       collisionMap: null,
       tickCount: 0,
       enemies: [],
@@ -254,8 +268,8 @@
       // This code chunk makes the cat fall after it jumps
       this.applyGravity = function() {
         if (this.isJumping()) {
-          this.jumpHeight += (this.downwardForce * -1);
-          if (this.jumpHeight >= this.height * 6) {
+          this.jumpHeight += (this.downwardForce * -0.5);
+          if (this.jumpHeight >= this.height * 4) {
             this.downwardForce = world.gravity;
             this.jumpHeight = 0;
           }
