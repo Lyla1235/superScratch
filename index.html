@@ -12,8 +12,7 @@
   <dialog open>
     <p>Use WASD to move and jump! Try to reach the end of the level!</p>
     <button id="restartBtn">Restart</button>
-    <button>Pause</button>
-    <button>Start</button>
+    <button id="pauseBtn">Pause</button>
   </dialog>
 
   <script type="text/javascript">
@@ -24,6 +23,7 @@
     var ctx = canvas.getContext("2d");
 
     var game = {
+      paused: false,
       timer: null,
       finished: false,
 
@@ -81,10 +81,12 @@
         }
       },
 
+      
+      
       // main loop — updates and draws everything every frame
       loop: function() {
-        if (this.finished) {
-          return; // stop the game if it's over
+        if (this.finished || this.paused) {
+          return; // stop the game if it's over or paused
         }
 
         world.tick();   // updates world physics
@@ -95,6 +97,15 @@
         // run again at ~60 FPS
         this.timer = window.setTimeout("game.loop()", 1000 / 60);
       },
+
+      togglePause: function() {
+        this.paused = !this.paused;
+
+        if (!this.paused) {
+          this.loop();
+        }
+      },
+
 
       // starts input, music, and the loop
       start: function() {
@@ -392,6 +403,10 @@
       }
     }
     game.start();
+    document.getElementById("pauseBtn").addEventListener("click", function () {
+      game.togglePause();
+      this.textContent = game.paused ? "Resume" : "Pause";
+    });
   </script>
 </body>
 
