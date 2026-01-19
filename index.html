@@ -26,6 +26,8 @@
       paused: false,
       timer: null,
       finished: false,
+      pauseKeyWasDown: false,
+      restartKeyWasDown: false,
 
       // keyboard input manager
       controls: {
@@ -34,20 +36,36 @@
         up: false,
         down: false,
 
-        // maps keycodes to actions
+        // maps keycodes to actions - ASCII values for A, D, W, S
         mapping: {
           65: "left",
           68: "right",
           87: "up",
-          83: "down"
+          83: "down",
+          32: "pause",
+          82: "restart"
         },
 
         // turns a key press into a true/false flag
-        buttonPress: function(keyInfo) {
-          this[this.mapping[keyInfo.keyCode]] = true;
-        },
-        buttonRelease: function(keyInfo) {
-          this[this.mapping[keyInfo.keyCode]] = false;
+
+        // The code below doesn't work because:
+        // - if a key is pressed that is not in the mapping, then:
+        //   this.mapping[keyInfo.keyCode] returns undefined and
+        //   this[undefined] = true // creates a property literally named "undefined"
+        //buttonPress: function(keyInfo) {
+        //  this[this.mapping[keyInfo.keyCode]] = true;
+        //},
+        //buttonRelease: function(keyInfo) {
+        //  this[this.mapping[keyInfo.keyCode]] = false;
+        //},
+
+        buttonPress: function(keyInfo) { 
+          const action = this.mapping[keyInfo.keyCode]; 
+          if (action) this[action] = true; 
+        }, 
+        buttonRelease: function(keyInfo) { 
+          const action = this.mapping[keyInfo.keyCode]; 
+          if (action) this[action] = false; 
         },
 
         // hooks the controls into the browser
@@ -59,6 +77,25 @@
           window.addEventListener("keyup", function(keyInfo) {
             game.controls.buttonRelease(keyInfo);
           }, false);
+          window.addEventListener("keydown", function (keyInfo) {
+            if (keyInfo.keyCode === 32) {
+              keyInfo.preventDefault(); // stop page scrolling
+            }
+            game.controls.buttonPress(keyInfo);
+          }, false);
+
+          window.addEventListener("keyup", function (keyInfo) {
+            if (keyInfo.keyCode === 32) {
+              keyInfo.preventDefault();
+            }
+            game.controls.buttonRelease(keyInfo);
+          }, false);
+          window.addEventListener("keydown", e => {
+            if (["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.code)) {
+              e.preventDefault();
+            }
+          });
+
         }
       },
 
@@ -79,32 +116,38 @@
             new Audio("Sounds/" + filename).play();
           }
         }
-      },
+      }, // emd of game
 
       
       
       // main loop — updates and draws everything every frame
       loop: function() {
-        if (this.finished || this.paused) {
+        if (this.finished) {
           return; // stop the game if it's over or paused
         }
 
-        world.tick();   // updates world physics
-        player.tick();  // updates player movement
-        world.draw();   // draws the level
-        player.draw();  // draws the cat
-
+        if (!this.paused) {
+          world.tick();   // updates world physics
+          player.tick();  // updates player movement
+          world.draw();   // draws the level
+          player.draw();  // draws the cat
+        }
+        
         // run again at ~60 FPS
         this.timer = window.setTimeout("game.loop()", 1000 / 60);
       },
 
-      togglePause: function() {
+      // toggles the pause state of the game
+      togglePause: function () {
         this.paused = !this.paused;
 
-        if (!this.paused) {
-          this.loop();
+        if (this.paused) {
+          window.clearTimeout(this.timer);
+        } else {
+          this.loop(); // restart the loop cleanly
         }
       },
+
 
 
       // starts input, music, and the loop
@@ -240,6 +283,19 @@
       },
       // controls the cat when the WASD keys are pressed
       processControls: function() {
+        // TODO: game not restarting when r is pressed
+        if (game.controls.restart && !game.restartKeyWasDown) { 
+          location.reload(); 
+        } 
+        game.restartKeyWasDown = game.controls.restart; // Update latch for next frame
+
+        // TODO: pause keypress resumes after the bar is lifted, not when pressed again
+        // Toggle pause only once per key press
+        if (game.controls.pause && !game.pauseKeyWasDown) {
+          game.togglePause();
+        }
+        game.pauseKeyWasDown = game.controls.pause; // Update latch for next frame
+
         if (game.controls.right) {
           this.character.speed = 5;
         }
@@ -393,7 +449,7 @@
             this.character.speed *= -1;
           }
           if (this.character.collidesWith(player.character)) {
-            game.stop();
+            game.stop("lose");
           }
           this.character.tick();
         }
