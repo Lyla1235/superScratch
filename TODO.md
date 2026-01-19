@@ -14,3 +14,4 @@
 - restart key does not work unless the game is running
 - pause key does not unpause
 - the game speeds up every time the it is unpaused
+- if you move backwards off the game, the cat turns invisible and you can neither win nor lose.
